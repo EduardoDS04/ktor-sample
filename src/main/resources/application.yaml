@@ -1,0 +1,12 @@
+ktor:
+    application:
+        modules:
+            - com.ktor.ApplicationKt.module
+    deployment:
+        port: 8081
+        host: "localhost"
+    database:
+        url: "jdbc:mariadb://localhost:3306/dbRestaurantes"
+        driver: "org.mariadb.jdbc.Driver"
+        username: "edu"
+        password: "edu"
