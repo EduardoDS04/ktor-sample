@@ -33,13 +33,36 @@ object UsuarioRepository : UsuarioInterface {
 
             if (existeUsuario) return@newSuspendedTransaction null
 
+            // Crear el usuario en la base de datos con un token vacío
             UsuarioDao.new {
                 dni = usuario.dni
                 nombre = usuario.nombre
                 email = usuario.email
                 password = usuario.password
-                token = ""
-            }.toDomain()
+                token = "" // Token vacío por defecto
+            }.toDomain() // Devuelve el usuario creado
+        }
+    }
+
+    override suspend fun updateToken(email: String, token: String): Boolean {
+        return newSuspendedTransaction {
+            val usuario = UsuarioDao.find { UsuarioTable.email eq email }.firstOrNull()
+            usuario?.apply { this.token = token } // Se actualiza el token
+            usuario != null // Si el usuario existe, se actualiza el token
+        }
+    }
+
+
+    override suspend fun getUsuarioByToken(token: String): Usuario? {
+        return newSuspendedTransaction {
+            UsuarioDao.find { UsuarioTable.token eq token }
+                .firstOrNull()
+                ?.toDomain()
+        }
+    }
+    override suspend fun getUsuarioById(id: Int): Usuario? {
+        return newSuspendedTransaction {
+            UsuarioDao.findById(id)?.toDomain()
         }
     }
 }

@@ -10,3 +10,9 @@ ktor:
         driver: "org.mariadb.jdbc.Driver"
         username: "edu"
         password: "edu"
+    jwt:
+        secret: "supersecretkey_1234567890"
+        issuer: "http://localhost:8081"
+        audience: "http://localhost:8081"
+        realm: "Restaurantes API"
+        expiration: 86400

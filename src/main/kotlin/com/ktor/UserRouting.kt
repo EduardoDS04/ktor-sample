@@ -6,6 +6,8 @@ import com.domain.models.UsuarioLoginDTO
 import com.domain.usecase.LoginUseCase
 import com.domain.usecase.RegisterUseCase
 import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -15,50 +17,41 @@ fun Route.userRoutes() {
         // Login
         post("/login") {
             val credentials = call.receive<UsuarioLoginDTO>()
-            val success = LoginUseCase(UsuarioRepository).invoke(
+            val token = LoginUseCase(
+                usuarioRepository = UsuarioRepository
+            ).invoke(
                 credentials.email,
                 credentials.password
             )
 
-            if (success) {
-                call.respond(mapOf("message" to "Login exitoso"))
-            } else {
-                call.respond(
-                    HttpStatusCode.Unauthorized,
-                    mapOf("error" to "Credenciales incorrectas")
-                )
-            }
+            token?.let {
+                call.respond(mapOf("token" to it))
+            } ?: call.respond(HttpStatusCode.Unauthorized, "Credenciales inválidas")
         }
 
         // Registro
         post("/register") {
             val usuario = call.receive<Usuario>()
-            val result = RegisterUseCase(UsuarioRepository).invoke(usuario)
-
-            if (result) {
-                call.respond(
-                    HttpStatusCode.Created,
-                    mapOf("message" to "Usuario registrado exitosamente")
-                )
+            if (RegisterUseCase(UsuarioRepository).invoke(usuario)) {
+                call.respond(HttpStatusCode.Created)
             } else {
-                call.respond(
-                    HttpStatusCode.Conflict,
-                    mapOf("error" to "El usuario ya existe (email o DNI duplicado)")
-                )
+                call.respond(HttpStatusCode.Conflict)
             }
         }
 
-        // Buscar por DNI
-        get("/{dni}") {
-            val dni = call.parameters["dni"] ?: throw IllegalArgumentException("DNI requerido")
-            val usuario = UsuarioRepository.getUsuarioByDni(dni)
+        // Endpoint protegido
+        authenticate("jwt") {
+            get("/{dni}") {
+                val dni = call.parameters["dni"] ?: throw IllegalArgumentException("DNI requerido")
+                val usuario = UsuarioRepository.getUsuarioByDni(dni)
 
-            usuario?.let {
-                call.respond(it)
-            } ?: call.respond(
-                HttpStatusCode.NotFound,
-                mapOf("error" to "Usuario no encontrado")
-            )
+                usuario?.let {
+                    call.respond(it)
+                } ?: call.respond(
+                    HttpStatusCode.NotFound,
+                    mapOf("error" to "Usuario no encontrado")
+                )
+            }
         }
     }
 }
